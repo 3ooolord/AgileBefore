@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>AdminLogin</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+
+
+    <script src="js/jquery-1.7.2.min.js"></script>
+    <link href="css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="css/bootstrap-responsive.min.css" rel="stylesheet"/>
+    <link href="btp_table/bootstrap-table.min.css" rel="stylesheet"/>
+
+    <link href="http://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600" rel="stylesheet"/>
+    <link href="css/font-awesome.css" rel="stylesheet"/>
+
+    <link href="css/adminia.css" rel="stylesheet"/>
+    <link href="css/adminia-responsive.css" rel="stylesheet"/>
+
+
+    <link href="css/pages/plans.css" rel="stylesheet"/>
+
+
+
+    <script src="js/bootstrap.js"></script>
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <script type="text/javascript" src="btp_table/bootstrap-table.js"></script>
+    <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="btp_table/locale/bootstrap-table-zh-CN.min.js"></script>
+    <script type="text/javascript" src="btp_table/bootstrap-table.min.js"></script>
+    <link href="btp_table/bootstrap-table.css" rel="stylesheet" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style>
+        .selectTest{
+            width: 300px;
+            height: 400px;
+            background: #ffffff;
+            padding: 20px;
+        }
+        .selectTest select{width: 150px;height: 30px;border:0px;-moz-appearance: none;appearance:none;-webkit-appearance: none;}
+    </style>
+    <script>
+
+        function reload() {
+            location.reload();
+        }
+
+        //页面加载完成时左边获取课程列表
+        window.onload=function(){
+             getAllModuleLeft();
+            mooduleRight();
+            getAllLecturer();
+            getSemesterYear();
+            getValue();
+            // console.log(theRequest);
+
+              };
+
+        var theRequest = new Object();
+    function getValue(){
+        var url = location.search; //获取url中"?"符后的字串 ('?modFlag=business&role=1')
+        if ( url.indexOf( "?" ) != -1 ) {
+            var str = url.substr(1); //substr()方法返回从参数值开始到结束的字符串；
+            var strs = str.split("&");
+            for (var i = 0; i < strs.length; i++) {
+                theRequest[strs[i].split("=")[0]] = (strs[i].split("=")[1]);
+            }
+            // console.log(theRequest); //此时的theRequest就是我们需要的参数；
+        }
+
+    }
+        //页面启动完成时需要获取课程列表(左边)
+        function getAllModuleLeft(){
+            $ModulelistLeft = $("#select1");
+            $ModuleRight = $("#select-module");
+
+            $.ajax({
+                type:"GET",
+                url:"gradeSys/admin/findMenu",
+                dataType:"json",
+                success:function(data){
+                    if(data.success===true){
+                        ModulelistLeft=data.data;
+                        $ModulelistLeft.empty();
+                        $.each(ModulelistLeft,function(val,text){
+                            $ModulelistLeft.append("<option id='optl"+text.moudleId+"' value='"+text.semesterYearId+"'>"+"MdId:"+text.moudleId+" SmstId:"+text.semesterYearId+"--"+text.moudleName+text.startYear+"~"+text.endYear+"semester"+text.semester+"</option>");
+                        })
+                    }else{
+                        alert(data.message);
+                    }
+                },
+                error:function(){
+                    alert("Something goes wrong");
+                }
+            })
+        };
+                //右边课程表(同左边)
+    function mooduleRight() {
+        $ModuleRight = $("#select-module");
+        $.ajax({
+            type:"GET",
+            url:"gradeSys/admin/findMenu",
+            dataType:"json",
+            success:function(data){
+                if(data.success===true){
+                    ModuleRight=data.data;
+                    $ModuleRight.empty();
+                    $.each(ModuleRight,function(val,text){
+                        $ModuleRight.append("<option id='optl"+text.moudleId+"' value='"+text.moudleId+"'>"+"MdId:"+text.moudleId+" SmstId:"+text.semesterYearId+"--"+text.moudleName+"semester"+text.semester+"</option>");
+                    })
+                }else{
+                    alert(data.message);
+                }
+            },
+            error:function(){
+                alert("Something goes wrong");
+            }
+        })
+    }
+    //搜索框调用方法
+        function search(){};
+
+        //右边老师列表
+        function getAllLecturer(){
+            var LecApd='';
+            $LecturerList = $('#select-lecturer');
+            $.ajax({
+                type:"GET",
+                url:"gradeSys/admin/findLecturer",
+                dataType:"json",
+                success:function(data){
+                    if(data.success===true){
+                        LecturerList=data.data;
+                        $LecturerList.empty();
+                        $.each(LecturerList,function(val,text){
+                            LecApd+='<option value='+text.id+'>';
+                            LecApd+='Id: ';
+                            LecApd+=text.id;
+                            LecApd+='  ';
+                            LecApd+='Name: ';
+                            LecApd+=text.name;
+                            LecApd+='</option>';
+
+                        });
+                        $LecturerList.append(LecApd);
+                        // console.log(LecApd);
+                    }else{
+                        alert(data.message);
+                    }
+                },
+                error:function(){
+                    alert("Something goes wrong");
+                }
+            })
+        };
+
+
+
+        //页面启动完成时(右边) 第三个选单获取学生列表
+        function getStudentRight(){
+
+                var semesterId=document.getElementById('search-for-semesterId').value;
+                var moudleId=document.getElementById('search-for-moudleId').value;
+                var SearchParam={moudleId,semesterId};
+                var apd='';
+                $StudentList = $("#select-student");
+                $.ajax({
+                    type:"POST",
+                    url:"gradeSys/admin/findStudent",
+                    dataType:"json",
+                    contentType:'application/json; charset=utf-8',
+                    data:JSON.stringify(SearchParam),
+                    success:function(data){
+                        if(data.success===true){
+                            StudentList=data.data;
+                            $StudentList.empty();
+                            $.each(StudentList,function(val,text){
+                                apd+='<option value='+text.id+'>';
+                                apd+='Id: ';
+                                apd+=text.id;
+                                apd+='  ';
+                                apd+='Name: ';
+                                apd+=text.name;
+                                apd+='</option>';
+
+                            });
+                            $StudentList.append(apd);
+                        }else{
+                            alert(data.message);
+                        }
+                    },
+                    error:function(){
+                        alert("Something goes wrong");
+                    }
+                })
+
+        };
+
+        //把学生列表中选中的项传到最右边"选中的学生"里面去
+           function pushToRight(){
+
+               $("#selected-student-list").append($("#select-student>option:selected"))
+
+           };
+        //取消
+        function cancel(){}
+        //保存
+        var studentIds = new Array();
+        var obj1;
+        var obj2;
+        var obj3;
+        var lecturerId;
+        var updateModuleId;
+        var updateSemesterId;
+        var StringParam;
+        function save(){
+            test123();
+            StringParam={studentIds,lecturerId,updateModuleId,updateSemesterId};
+            console.log(studentIds);
+            console.log(lecturerId);
+            console.log(updateModuleId);
+            console.log(updateSemesterId);
+
+            $.ajax({
+                type:"POST",
+                url:"gradeSys/admin/save",
+                dataType:"json",
+                contentType:'application/json; charset=utf-8',
+                data:JSON.stringify(StringParam),
+                success:function(data){
+                    if(data.success ===true){
+                        alert("update success!");
+                    }else{
+                        alert("update fail");
+                    }
+                },
+                error:function(){
+                    alert("error ,all to be nice next time! ");
+                }
+            })
+        }
+
+        function getSemesterYear() {
+
+                $YearList = $("#select-year");
+                $.ajax({
+                    type:"GET",
+                    url:"gradeSys/admin/findSemesterYear",
+                    dataType:"json",
+                    success:function(data){
+                        if(data.success===true){
+                            YearList=data.data;
+                            $YearList.empty();
+                            $YearList.append("<option>"+"'Select SemesterYear'"+"</option>");
+                            $.each(YearList,function(val,text){
+                                $YearList.append("<option value='"+text.id+"'>"+text.semester+"---"+text.startYear+"--"+text.endYear+"</option>");
+                            })
+                        }else{
+                            alert(data.message);
+                        }
+                    },
+                    error:function(){
+                        alert("Something goes wrong");
+                    }
+                })
+
+        }
+
+function getLecId(){
+           obj1= document.getElementById('select-lecturer');
+            let index1 = obj1.selectedIndex; // 选中索引
+            let LecValue = obj1.options[index1].value; // 选中值
+           // console.log(LecValue);
+        lecturerId= LecValue;
+           //=================================================================
+           obj2=document.getElementById('select-module');
+           let index2 = obj2.selectedIndex;
+           let ModuleValue=obj2.options[index2].value;
+           // console.log(ModuleValue);
+    updateModuleId = ModuleValue;
+    //=================================================================
+    obj3=document.getElementById('select-year');
+    let index3 = obj3.selectedIndex;
+    let SmstY = obj3.options[index3].value;
+    // console.log(SmstY);
+    updateSemesterId=SmstY;
+
+
+}
+function test123() {
+    document.getElementById('selected-student-list');
+    for (var i=0;i<document.getElementById('selected-student-list').options.length;i++){
+        studentIds[i]=document.getElementById('selected-student-list').options[i].value;
+    }
+    // console.log(studentIds);
+    getLecId();
+}
+
+
+
+
+
+    </script>
+    <script src="../btp_table/locale/bootstrap-table-zh-CN.js"></script>
+</head>
+
+<body>
+
+
+<div class="navbar navbar-fixed-top">
+
+    <div class="navbar-inner">
+
+        <div class="container">
+
+            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </a>
+
+            <a class="brand" href="../../../test/java">Examination Reporting System</a>
+            <div class="nav-collapse">
+                <ul class="nav pull-right">
+
+
+                    <li class="divider-vertical"></li>
+
+                    <li>
+                        <a href="index.html"><i class="icon-off"></i> Logout</a>
+                    </li>
+                    </li>
+                </ul>
+            </div>
+        </div> <!-- /container -->
+
+    </div> <!-- /navbar-inner -->
+
+</div> <!-- /navbar -->
+
+
+<div id="content">
+
+    <div class="container">
+
+        <div class="row">
+
+            <div class="span3" style="width: 50%;position: absolute ;left: 0px">
+
+
+                        <div class="control-group">
+
+                            <div class="controls" >
+                                <input id="search-for-moudleId" type="text" placeholder="moudleId" class="input-large disabled"
+                                       value="" form="profile-left"/>
+                                <input id="search-for-semesterId" type="text" placeholder="semesterId" class="input-large disabled"
+                                       value="" form="profile-left"/><button type="button" onclick="getStudentRight()"><i class="icon-search"></i></button>
+                            </div> <!-- /controls -->
+                        </div>
+
+
+
+
+
+
+                <div class="row" style="width: 100%;position: absolute ;left: 0px;height: 500px">
+
+                    <div class="span3" style="width: 100%;position: absolute ;left: 0px;height: 500px">
+
+                        <br/>
+                        <div class="widget">
+
+                            <div class="widget-header">
+                                <h3 style="left: 40%">Module list</h3>
+                            </div> <!-- /widget-header -->
+
+                            <div class="widget-content" style="height: 100%">
+
+
+                                <div class="tabbable">
+                                    <br/>
+                                    <div class="tab-content" style="height: 500px">
+                                        <div class="tab-pane active" id="L1">
+                                            <form id="profile-left" class="form-horizontal" action="">
+                                            <fieldset>
+
+                                                <select id="select1" multiple onload="forEachList();" style="height: 350px;width: 500px">
+
+                                                </select>
+
+                                                <br/>
+
+
+                                            </fieldset>
+                                            </form>
+                                        </div>
+
+
+                                    </div>
+
+
+                                </div>
+
+
+                            </div> <!-- /widget-content -->
+
+                        </div> <!-- /widget -->
+
+                    </div> <!-- /span9 -->
+
+                </div> <!-- /row -->
+
+
+            </div> <!-- /span3 -->
+
+
+            <div class="span9" style="width: 50%;position: absolute; left: 50%">
+
+                <h1 class="page-title">
+                    <i class="icon-th-large"></i>
+                    Setup a Module
+                </h1>
+
+
+                <div class="row">
+
+                    <div class="span9">
+
+                        <div class="widget">
+
+                            <div class="widget-header">
+                                <h3>Manage Student Info</h3>
+                            </div> <!-- /widget-header -->
+
+                            <div class="widget-content">
+
+
+                                <div class="tabbable">
+
+                                    <br/>
+                                    <form action="">
+                                    <div class="tab-content" style="height: 500px">
+                                        <div  id="selected-student" style="position: absolute; left: 60%; height: auto" >
+                                            <label style="color: #0e90d2" onchange="">student-changed</label>
+                                            <select name="selected-student-list" id="selected-student-list" multiple>
+
+                                            </select>
+                                        </div>
+                                        <label>select-module</label>
+                                        <select name="select-module"id="select-module"><option>Select Module</option></select><br/>
+                                        <label>select-lecturer</label>
+                                        <select name="select-lecturer" id="select-lecturer"></select><br/>
+                                        <label>Select Student(please using Ctrl and click for multiple select)</label>
+                                        <select multiple name="select-student" id="select-student"><option>-----</option>
+
+                                        </select>
+                                        <input type="button" value="----->>" id="push-to-right" onclick="pushToRight();">
+                                        <br/>
+                                        <select name="select-year" id="select-year">
+                                            <option>Select Year && Semester</option>
+                                        </select>
+                                        <br/>
+                                        <input value="cancel" type="button" onclick="reload()" style="color: #0e90d2;width: 55px;height: 25px"></input>
+                                        <input value="update" type="button" onclick="save()" style="color: #0e90d2;width: 55px;height: 25px"></input>
+
+
+
+                                    </div>
+                                    </form>
+
+
+
+                                </div>
+
+
+                            </div> <!-- /widget-content -->
+
+                        </div> <!-- /widget -->
+
+                    </div> <!-- /span9 -->
+
+                </div> <!-- /row -->
+
+
+            </div> <!-- /span9 -->
+
+
+        </div> <!-- /row -->
+
+    </div> <!-- /container -->
+
+</div> <!-- /content -->
+<br>
+
+
+
+
+<!-- Le javascript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+
+
+</body>
+</html>

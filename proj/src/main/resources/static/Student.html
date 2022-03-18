@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>StudentLogin</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+
+    <link href="css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="css/bootstrap-responsive.min.css" rel="stylesheet"/>
+    <link href="btp_table/bootstrap-table.min.css" rel="stylesheet"/>
+    <link href="http://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600" rel="stylesheet"/>
+    <link href="css/font-awesome.css" rel="stylesheet"/>
+    <link href="css/adminia.css" rel="stylesheet"/>
+    <link href="css/adminia-responsive.css" rel="stylesheet"/>
+    <link href="css/pages/plans.css" rel="stylesheet"/>
+    <link href="btp_table/bootstrap-table.css" rel="stylesheet" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style>
+        .selectTest{
+            width: 300px;
+            height: 400px;
+            background: #ffffff;
+            padding: 20px;
+        }
+        .selectTest select{width: 150px;height: 30px;border:0px;-moz-appearance: none;appearance:none;-webkit-appearance: none;}
+    </style>
+    <script>
+
+        //页面加载完成时左边获取课程列表  run under functions when window onload
+        window.onload=function(){
+            getValue();
+            getAllSemester();
+             // getAllModuleRight();
+
+                 };
+
+        var theRequest = new Object();
+        function getValue(){
+            var url = location.search; //获取url中"?"符后的字串 ('?modFlag=business&role=1')  catching string at url after "?"
+            if ( url.indexOf( "?" ) != -1 ) {
+                var str = url.substr(1); //substr()方法返回从参数值开始到结束的字符串； substr() return string from the beginning with param til the end of it
+                var strs = str.split("&");
+                for (var i = 0; i < strs.length; i++) {
+                    theRequest[strs[i].split("=")[0]] = (strs[i].split("=")[1]);
+                }
+                // console.log(theRequest); //此时的theRequest就是我们需要的参数；now theRequest is the param that we need
+            }
+
+        }
+
+
+    //搜索框调用方法
+        function search(){};
+        var semesterYs= new Array();
+        var cauculategetAllSemester=1;
+        // get semester list left
+        function getAllSemester(){
+            var apd;
+            apd='';
+            $SemesterlistLeft = $("#select1");
+            $.ajax({
+                type:"GET",
+                url:"/gradeSys/student/findSemesterYear",
+                dataType:"json",
+                success:function(data){
+                    if(data.success===true){
+                        SemesterlistLeft=data.data;
+                        $SemesterlistLeft.empty();
+
+                        $.each(SemesterlistLeft,function(val,text){
+                            let testSY={id:text.id,startYear: text.startYear,endYear:text.endYear,semester:text.semester};
+                            semesterYs[cauculategetAllSemester]=testSY;
+                            apd+='<option value='+text.id+'>';
+                            apd+="SemesterId:";
+                            apd+=text.id;
+                            apd+="  ";
+                            apd+=text.startYear;
+                            apd+='---';
+                            apd+=text.endYear;
+                            apd+=' semster: ';
+                            apd+=text.semester;
+                            apd+='</option>';
+                            cauculategetAllSemester++;
+                            // $SemesterlistLeft.append("<option id='"+text.id+"' value='"+text.id+"'>"+text.startYear+"-----"+text.endYear+"'semester'"+"</option>");
+                        });
+                        $SemesterlistLeft.append(apd);
+                    }else{
+                        alert(data.message);
+                    }
+                },
+                error:function(){
+                    alert("Something goes wrong");
+                }
+            })
+        };
+        var searchedId ;
+        var semesterYear ;
+        var userId=1;
+        var StudentParam={semesterYear,userId};
+
+        //页面启动完成时(右边)选单获取课程列表
+        function getAllModuleRight(){
+            $ModuleListRight = $("#Module-right");
+            searchedId =document.getElementById('searchedId').value;
+            semesterYear={id:searchedId,startYear: semesterYs[searchedId].startYear,endYear:semesterYs[searchedId].endYear,semester:semesterYs[searchedId].semester};
+            userId=theRequest.userId;
+            StudentParam={semesterYear,userId};
+            var apd='<thead>\n' +
+                '                                            <tr ><td>StudentId</td><td>Module</td><td>Grades</td></tr>\n' +
+                '                                            </thead>';
+                $.ajax({
+                type:"POST",
+                url:"/gradeSys/student/findScore",
+                dataType:"json",
+                contentType:'application/json; charset=utf-8',
+                data:JSON.stringify(StudentParam),
+                success:function(data){
+                    if(data.success===true){
+                        ModulelistRight=data.data;
+                        $ModuleListRight.empty();
+                        $.each(ModulelistRight,function(val,text){
+                            apd+="<tr>";
+                            apd+="<td>";
+                            apd+=text.studentId;
+                            apd+="</td>";
+                            apd+="<td>";
+                            apd+=text.moudleName;
+                            apd+="</td>";
+                            apd+="<td>";
+                            apd+=text.grade;
+                            apd+="</td>";
+                            apd+='</tr>';
+                        })
+                        $ModuleListRight.append(apd);
+                        PieGo();
+                         BarGo();
+                    }else{
+                        alert(data.message);
+                    }
+                },
+                error:function(){
+                    alert("Something goes wrong");
+                }
+            })
+        };
+
+
+
+
+
+function test123() {
+    var map1 =new Map();
+    map1[0]=("semesterYear",semesterYear);
+    map1[1]=(1,semesterYear);
+     searchedId=document.getElementById('searchedId').value;
+    console.log(searchedId);
+    console.log(document.getElementById('searchedId').value);
+
+
+}
+
+//条形图 Bar Chart===================================================================================================
+        function BarGo() {
+            var myChart = echarts.init(document.getElementById('barchart-div'));
+            // 显示标题，图例和空的坐标轴
+            myChart.setOption({
+                title: {
+                    text: ''
+                },
+                tooltip: {},
+                legend: {
+                    data:[]
+                },
+                xAxis: {
+                    data: []
+                },
+                yAxis: {},
+                series: [{
+                    name: 'barchart-div',
+                    type: 'bar',
+                    data: []
+                }]
+            });
+            myChart.showLoading();    //数据加载完之前先显示一段简单的loading动画
+
+            var Xnames=[];
+            var Ynums=[];
+
+            var jsondata= JSON.stringify({
+                id: 1,
+                userId:1,
+                startYear:5
+
+            });
+
+            $.ajax({
+                type : "post",
+                async : true,
+                url : "/gradeSys/student/findScore",
+                contentType: "application/json;charset=UTF-8",
+                dataType : "json",        //返回数据形式为json
+                data : JSON.stringify(StudentParam),
+                success : function(data) {
+
+                    if (data.success===true) {
+                        for(var i=0;i<data.data.length;i++){
+                            Xnames.push(data.data[i].moudleName);
+                            Ynums.push(data.data[i].grade);// console.log(data.data[i].moudleName);
+                        }
+                        // console.log(Xnames);
+                        myChart.hideLoading();
+                        myChart.setOption({
+                            xAxis: {
+                                data: Xnames
+                            },
+                            series:[{
+                                name:'barchart-div',
+                                data:Ynums,
+                            }]
+                        });
+
+                    }
+                    singleMJudge();
+                },
+                error : function(errorMsg) {
+                    //请求失败时执行该函数
+                    alert("failed loading chart!");
+                    myChart.hideLoading();
+                }
+            })
+
+
+            function singleMJudge() {
+                $Judge = $("#judgment");
+                var str2='<div></div>';
+                for (var i=0;i<Ynums.length;i++){
+                    if (Ynums[i]<=80&&Ynums[i]>60){
+                        str2+='<div>';
+                        str2+='Your ';
+                        str2+=Xnames[i];
+                        str2+=' grade is  medium,keep it up';
+                        str2+='</div>';
+                    }else if (Ynums[i]<=60&&Ynums[i]>40){
+                        str2+='<div>';
+                        str2+='Your ';
+                        str2+=Xnames[i];
+                        str2+=' grade is  pass, pls work hard';
+                        str2+='</div>';
+                    }else if(Ynums[i]<=40){
+                        str2+='<div>';
+                        str2+='Your ';
+                        str2+=Xnames[i];
+                        str2+=' grade is too low, pls contact your teacher ,and try to pass next time';
+                        str2+='</div>';
+                    }else if (Ynums[i]>80){
+                        str2+='<div>';
+                        str2+='Your ';
+                        str2+=Xnames[i];
+                        str2+=' grade is excellent, congratulation';
+                        str2+='</div>';
+                    }
+
+                }
+                $Judge.html(str2);
+                // console.log(Ynums[1]);
+                // console.log(str2);
+
+            }
+
+        }
+
+//饼状图 Pie Chart===================================================================================================
+
+        function PieGo() {
+            var pieName=[];
+            var pieVal=[];
+            var pie = echarts.init(document.getElementById('piechart-div'));
+            var option2 = {
+                // backgroundColor:'#CC22FF',
+                // color: ['#3398DB'],
+                title:{
+                    text:'grade',
+                    radius: ['50%', '70%'],//饼图半径
+                    hoverAnimation : true,//是否开启hover在扇区上的放大动画效果。
+                    itemWidth: 24,   // 设置图例图形的宽
+                    itemHeight: 18,
+                    textStyle: {
+                        color: '#666'  // 图例文字颜色
+                    },
+                },
+                tooltip:{
+                    // trigger 设置触发类型，默认数据触发，可选值：'item' ¦ 'axis'
+                    trigger: 'item',
+                    showDelay: 20,   // 显示延迟，添加显示延迟可以避免频繁切换，单位ms
+                    hideDelay: 20,   // 隐藏延迟，单位ms
+                    backgroundColor: 'rgba(100,250,212,0.7)',  // 提示框背景颜色
+                    textStyle: {
+                        fontSize: '16px',
+                        color: '#000'  // 设置文本颜色 默认#FFF
+                    },
+                    // formatter设置提示框显示内容
+                    // {a}指series.name  {b}指series.data的name
+                    // {c}指series.data的value  {d}%指这一部分占总数的百分比
+                    formatter: '{a} <br/>{b} : ({d}%)'
+                },
+
+                series:[{
+                    name:'grade',
+                    type:'pie',
+                    data:[]
+                }]
+            };
+
+            pie.setOption(option2);
+            pie.showLoading();
+
+            $.ajax({
+                type : "post",
+                async : true,            //异步请求（同步请求将会锁住浏览器，用户其他操作必须等待请求完成才可以执行）
+                url : "/gradeSys/student/findScore",    //请求发送到TestServlet处
+                contentType: "application/json;charset=UTF-8",
+                dataType : "json",        //返回数据形式为json
+                data : JSON.stringify(StudentParam),
+                success : function(data) {
+                    //请求成功时执行该函数内容，result即为服务器返回的json对象
+                    if (data.success===true) {
+                        for(var i=0;i<data.data.length;i++){
+                            pieName.push(data.data[i].moudleName);    //挨个取出类别并填入类别数组
+                            pieVal.push(data.data[i].grade);// console.log(data.data[i].moudleName);
+                        }
+                        // console.log(pieVal);
+                        pie.hideLoading();    //隐藏加载动画
+                        pie.setOption({        //加载数据图表
+                            legend: {
+                                data: pieName,
+                            },
+                            series:[{
+                                name:'barchart-div',
+                                data:pieVal,
+                            }]
+                        });
+                    }
+
+                },
+                error : function(errorMsg) {
+                    //请求失败时执行该函数
+                    alert("图表请求数据失败!");
+                    pie.hideLoading();
+                }
+            })
+        }
+
+    </script>
+
+</head>
+
+<body>
+
+
+<div class="navbar navbar-fixed-top">
+
+    <div class="navbar-inner">
+
+        <div class="container">
+
+            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </a>
+
+            <a class="brand" href="../../../test/java">Examination Reporting System</a>
+            <div class="nav-collapse">
+                <ul class="nav pull-right">
+
+
+                    <li class="divider-vertical"></li>
+                    <li>
+                        <a href="index.html"><i class="icon-off"></i> Logout</a>
+                    </li>
+                    </li>
+                </ul>
+            </div>
+        </div> <!-- /container -->
+
+    </div> <!-- /navbar-inner -->
+
+</div> <!-- /navbar -->
+
+
+<div id="content">
+
+    <div class="container">
+
+        <div class="row">
+
+            <div class="span3" style="width: 50%;position: absolute ;left: 0px">
+
+
+                        <div class="control-group">
+
+                            <div class="controls" >
+                                <input id="searchedId" type="text" placeholder="semesterId" class="input-large disabled"
+                                       value="" /><button type="button" onclick="getAllModuleRight()"><i class="icon-search"></i></button>
+
+                                <input type="button" onclick="test123()">
+                            </div> <!-- /controls -->
+                        </div>
+
+
+
+
+
+
+                <div class="row" style="width: 100%;position: absolute ;left: 0px;height: 600px">
+
+                    <div class="span3" style="width: 100%;position: absolute ;left: 0px;height: 600px">
+
+                        <br/>
+                        <div class="widget">
+
+                            <div class="widget-header">
+                                <h3 style="left: 40%">Semester list</h3>
+                            </div> <!-- /widget-header -->
+
+                            <div class="widget-content">
+                                <div class="tabbable">
+
+                                    <br/>
+
+                                    <div class="tab-content" style="height: 500px">
+                                        <div class="tab-pane active" id="L1">
+
+                                            <div id="piechart-div" style="left: 50%;position: absolute;top: 7%;width: 300px;height:200px;">
+
+                                            </div>
+                                            <div id="barchart-div" style="left: 50%;position: absolute;top: 40%;width: 300px;height:200px;">
+                                            </div>
+
+
+                                            </div>
+
+                                                <select id="select1" multiple  style="height: 350px;width: 300px">
+
+                                                </select>
+
+                                                <br/>
+
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> <!-- /widget-content -->
+                        </div> <!-- /widget -->
+                    </div> <!-- /span9 -->
+                </div> <!-- /row -->
+
+
+            </div> <!-- /span3 -->
+
+
+            <div class="span9" style="width: 50%;position: absolute; left: 50%;height: 600px">
+
+                <h1 class="page-title">
+                    <i class="icon-th-large"></i>
+                    Grades
+                </h1>
+
+
+                <div class="row">
+                    <div class="span9">
+                        <div class="widget">
+                            <div class="widget-header">
+                                <h3>Manage Student </h3>
+                            </div> <!-- /widget-header -->
+                            <div class="widget-content">
+                                <div class="tabbable">
+                                    <br/>
+                                    <div class="tab-content" style="height: 500px">
+                                        <label><b>Model</b></label>
+                                        <label id="Module-name"></label>
+                                        <br/><br/>
+                                        <label><b>Term</b></label>
+
+                                        <table id="Module-right" class="table table-bordered" style="position: absolute; left: 30%; top: 10%;width: 50%;">
+                                            <thead>
+                                            <tr ><td>StudentId</td><td>Module</td><td>Grades</td></tr>
+                                            </thead>
+                                        </table>
+                                        <div id="judgment" style="left: 1%;position: absolute;top: 50%;">
+                                        </div>
+                                </div>
+
+
+                            </div> <!-- /widget-content -->
+
+                        </div> <!-- /widget -->
+
+                    </div> <!-- /span9 -->
+
+                </div> <!-- /row -->
+
+
+            </div> <!-- /span9 -->
+
+
+        </div> <!-- /row -->
+
+    </div> <!-- /container -->
+
+</div> <!-- /content -->
+<br>
+<script type="text/javascript" src="echarts.min%20(1).js"></script>
+<script src="http://code.jquery.com/jquery-2.0.0.js"></script>
+<script src="js/bootstrap.js"></script>
+<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+<script type="text/javascript" src="btp_table/bootstrap-table.js"></script>
+<script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="btp_table/bootstrap-table.min.js"></script>
+<script type="text/javascript">
+
+</script>
+<script>
+
+</script>
+
+
+
+<!-- Le javascript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+
+
+</body>
+</html>

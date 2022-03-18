@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>LecturerLogin</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+
+
+    <link href="css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="css/bootstrap-responsive.min.css" rel="stylesheet"/>
+    <link href="btp_table/bootstrap-table.min.css" rel="stylesheet"/>
+    <link href="http://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600" rel="stylesheet"/>
+    <link href="css/font-awesome.css" rel="stylesheet"/>
+    <link href="css/adminia.css" rel="stylesheet"/>
+    <link href="css/adminia-responsive.css" rel="stylesheet"/>
+    <link href="css/pages/plans.css" rel="stylesheet"/>
+    <link href="btp_table/bootstrap-table.css" rel="stylesheet" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style>
+        .selectTest{
+            width: 300px;
+            height: 400px;
+            background: #ffffff;
+            padding: 20px;
+        }
+        .selectTest select{width: 150px;height: 30px;border:0px;-moz-appearance: none;appearance:none;-webkit-appearance: none;}
+    </style>
+    <script>
+
+        //页面加载完成时运行功能   run these functions when window onload
+        window.onload=function(){
+            getValue();
+            console.log(theRequest.userId);
+            getAllModuleLeft();
+            getAllModuleRight();
+
+        };
+
+         // get userId from prev page
+        var theRequest = new Object();
+        function getValue(){
+            var url = location.search; //获取url中"?"符后的字串 ('?modFlag=business&role=1')  catching string at url after "?"
+            if ( url.indexOf( "?" ) != -1 ) {
+                var str = url.substr(1); //substr()方法返回从参数值开始到结束的字符串； substr() return string from the beginning with param til the end of it
+                var strs = str.split("&");
+                for (var i = 0; i < strs.length; i++) {
+                    theRequest[strs[i].split("=")[0]] = (strs[i].split("=")[1]);
+                }
+                // console.log(theRequest); //此时的theRequest就是我们需要的参数；now theRequest is the param that we need
+            }
+
+        }
+
+
+
+        //get module list (left)
+        function getAllModuleLeft(){
+            $ModulelistLeft = $("#select1");
+            $.ajax({
+                type:"GET",
+                url:"gradeSys/lecturer/findMenu?id=1",
+                dataType:"json",
+                success:function(data){
+                    if(data.success===true){
+                        ModulelistLeft=data.data;
+                        $ModulelistLeft.empty();
+                        $.each(ModulelistLeft,function(val,text){
+                            $ModulelistLeft.append("<option id='optl"+text.moudleId+"' value='"+text.semesterYearId+"'>"+"MdId:"+text.moudleId+" SmstId:"+text.semesterYearId+"--"+text.moudleName+text.startYear+"~"+text.endYear+"semester"+text.semester+"</option>");
+                        })
+                    }else{
+                        alert(data.message);
+                    }
+                },
+                error:function(){
+                    alert("Something goes wrong");
+                }
+            })
+        };
+
+
+                //get student list rightside
+        var getGradeIds=new Array();
+        var getStudentIds = new Array();
+        var getStudentGrades = new Array();
+        var getsemesterYearId=new Array();
+        var getmoudleId=new Array();
+        var StudentParam={getStudentIds,getStudentGrades,getGradeIds,getsemesterYearId,getmoudleId};
+        var semesterId=1;
+        function getAllModuleRight(){
+            let calculate=0;
+            let moudleId=theRequest.userId;
+            let LecturerParam={moudleId,semesterId};
+            let apd='';
+            $StudentList = $("#student-table");
+            $.ajax({
+                type:"POST",
+                url:"gradeSys/lecturer/findGrade",
+                dataType:"json",
+                contentType:'application/json; charset=utf-8',
+                data:JSON.stringify(LecturerParam),
+                success:function(data){
+                    if(data.success===true){
+                        StudentList=data.data;
+                        $StudentList.empty();
+                        apd+='<thead>\n' +
+                            '                                            <tr ><td>GradeId</td><td>StudentId</td><td>name</td><td>grade</td><td>SmstYId</td><td>moduleId</td></tr>\n' +
+                            '                                            </thead>';
+                        $.each(StudentList,function(val,text){
+                        apd+='<tr>';
+                        apd+='<td >';
+                        apd+=text.gradeId;
+                        apd+='</td>';
+                        apd+='<td name="id">';
+                        apd+=text.id;
+                        apd+='</td>';
+                        apd+='<td>';
+                        apd+=text.name;
+                        apd+='</td>';
+                        apd+='<td name="grade" contenteditable="true">';
+                        apd+=text.grade;
+                        apd+='</td>';
+                        apd+='<td>';
+                        apd+=text.semesterYearId;
+                        apd+='</td>';
+                        apd+='<td>';
+                        apd+=text.moudleId;
+                        apd+='</td>';
+                        apd+='</tr>';
+                        getStudentIds[calculate]=text.id;
+                        getGradeIds[calculate]=text.gradeId;
+                        getmoudleId[calculate]=text.moudleId;
+                        getsemesterYearId[calculate]=text.semesterYearId;
+                        calculate++;
+                        });
+                        $StudentList.append(apd);
+                        // console.log(getStudentIds);
+                    }else{
+                        alert(data.message);
+                    }
+                },
+                error:function(){
+                    alert("Something goes wrong");
+                }
+            })
+        };
+
+        // foreach table list and get param from it
+        function testTable() {
+            var calculate2=0;
+            var tb = document.getElementById('student-table');    // table - id
+            var rows = tb.rows;                           // get all rows
+            for(var i = 1; i<rows.length; i++ ){
+                    getStudentGrades[calculate2]=rows[i].cells[3].innerHTML;
+                        calculate2++;
+                }
+        }
+
+
+
+
+
+        //取消  cancel
+        function cancel(){}
+        //保存 save
+        function save(){
+                testTable();
+            $.ajax({
+                type:"POST",
+                url:"gradeSys/lecturer/save",
+                dataType:"json",
+                contentType:'application/json; charset=utf-8',
+                data:JSON.stringify(StudentParam),
+                success:function(data){
+                    if(data.success ==true){
+                        console.log(getStudentIds);
+                        console.log(getStudentGrades);
+                        console.log(getGradeIds);
+                        console.log(getsemesterYearId);
+                        console.log(getmoudleId);
+
+                        alert("update success!");
+                    }else{
+                        alert("update fail");
+                    }
+                },
+                error:function(){
+                    alert("error ,all to be nice next time! ");
+                }
+            })
+        }
+
+
+    </script>
+    <script src="btp_table/locale/bootstrap-table-zh-CN.js"></script>
+</head>
+
+<body>
+
+
+<div class="navbar navbar-fixed-top">
+
+    <div class="navbar-inner">
+
+        <div class="container">
+            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </a>
+            <a class="brand" href="../../../test/java">Examination Reporting System</a>
+            <div class="nav-collapse">
+                <ul class="nav pull-right">
+                    <li class="divider-vertical"></li>
+
+                    <li>
+                        <a href="index.html"><i class="icon-off"></i> Logout</a>
+                    </li>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="content">
+    <div class="container">
+        <div class="row">
+            <div class="span3" style="width: 50%;position: absolute ;left: 0px">
+                        <div class="control-group">
+                            <div class="controls" >
+                                <input type="text" placeholder="Search" class="input-large disabled"
+                                       value="" form="profile-left"/><button type="submit" onclick=""><i class="icon-search"></i></button>
+                                <input type="button" onclick="testTable()">
+                            </div>
+                        </div>
+
+
+
+                <div class="row" style="width: 100%;position: absolute ;left: 0px;height: 500px">
+                    <div class="span3" style="width: 100%;position: absolute ;left: 0px;height: 500px">
+                        <br/>
+                        <div class="widget">
+                            <div class="widget-header">
+                                <h3 style="left: 40%">Module list</h3>
+                            </div>
+                            <div class="widget-content" style="height: 100%">
+                                <div class="tabbable">
+                                    <br/>
+                                    <div class="tab-content" style="height: 500px">
+                                        <div class="tab-pane active" id="L1">
+                                            <form id="profile-left" class="form-horizontal" action="">
+                                            <fieldset>
+                                                <select id="select1" multiple  style="height: 350px;width: 300px">
+                                                </select>
+                                                <br/>
+                                                <table class="table table-bordered" id="table-try" data-pagination="true" data-side-pagination="client" data-page-size="3">
+                                                </table>
+                                            </fieldset>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+
+            <div class="span9" style="width: 50%;position: absolute; left: 50%">
+                <h1 class="page-title">
+                    <i class="icon-th-large"></i>
+                    Grades
+                </h1>
+                <div class="row">
+                    <div class="span9">
+                        <div class="widget">
+                            <div class="widget-header">
+                                <h3>Manage Student </h3>
+                            </div>
+                            <div class="widget-content">
+                                <div class="tabbable">
+                                    <br/>
+                                    <form action="">
+                                    <div class="tab-content" style="height: 500px">
+                                        <input value="cancel" type="button" onclick="" style="color: #0e90d2;width: 55px;height: 25px"></input>
+                                        <input value="update" type="button" onclick="save()" style="color: #0e90d2;width: 55px;height: 25px"></input>
+                                        <table id="student-table" class="table table-bordered" style="position: absolute; left: 30%; top: 10%;width: 50%;height: 300px">
+                                        </table>
+
+                                    </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<br>
+
+<script type="text/javascript" src="echarts.min%20(1).js"></script>
+<script src="http://code.jquery.com/jquery-2.0.0.js"></script>
+<script src="js/bootstrap.js"></script>
+<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+<script type="text/javascript" src="btp_table/bootstrap-table.js"></script>
+<script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="btp_table/bootstrap-table.min.js"></script>
+
+
+
+
+</body>
+</html>
